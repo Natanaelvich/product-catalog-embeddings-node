@@ -13,13 +13,28 @@ const client = new OpenAI({
 });
 
 export const generateProducts = async (message: string) => {
+  const prompt = `Analise a seguinte descrição e retorne uma lista de produtos relevantes em formato JSON com a chave "produtos" contendo um array de strings.
+  
+Descrição: ${message}
+
+Retorne APENAS o JSON no formato:
+{
+  "produtos": ["produto1", "produto2", ...]
+}`;
+
   const completion = await client.chat.completions.create({
-    messages: [{ role: "user", content: message }],
+    messages: [{ role: "user", content: prompt }],
     model: "gpt-3.5-turbo",
-    response_format: zodResponseFormat(schema),
+    response_format: { type: "json_object" },
   });
 
-  return completion.choices[0].message.parsed;
+  try {
+    const response = JSON.parse(completion.choices[0].message.content || '{}');
+    return schema.parse(response);
+  } catch (error) {
+    console.error('Error parsing response:', error);
+    return { produtos: [] };
+  }
 };
 
 export const generateEmbedding = async (input: string) => {
