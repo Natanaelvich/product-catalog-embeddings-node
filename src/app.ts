@@ -36,8 +36,8 @@ app.get('/produtos/falta', (req, res) => {
 });
 
 app.post("/cart", async (req, res) => {
-    const { message } = req.body;
-    const embedding = await generateEmbedding(message);
+    const { input } = req.body;
+    const embedding = await generateEmbedding(input);
     if (!embedding) {
       res.status(500).json({ error: 'Embedding não gerada' });
       return;
