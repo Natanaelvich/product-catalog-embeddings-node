@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { embedProducts, generateEmbedding, generateProducts } from "./openai";
-import { produtosEmEstoque, produtosEmFalta, todosProdutos } from "./database";
+import { produtosEmEstoque, produtosEmFalta, todosProdutos, produtosSimilares } from "./database";
 
 const app = express();
 app.use(express.json());
@@ -34,6 +34,17 @@ app.get('/produtos/estoque', (req, res) => {
 app.get('/produtos/falta', (req, res) => {
   res.json(produtosEmFalta());
 });
+
+app.post("/cart", async (req, res) => {
+    const { message } = req.body;
+    const embedding = await generateEmbedding(message);
+    if (!embedding) {
+      res.status(500).json({ error: 'Embedding não gerada' });
+      return;
+    }
+    const produtos = produtosSimilares(embedding);
+    res.json(produtos.map(p => ({ nome: p.nome, similaridade: p.similaridade })));
+  });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

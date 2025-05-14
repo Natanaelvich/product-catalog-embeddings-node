@@ -27,3 +27,11 @@ GET {{baseUrl}}/produtos/estoque
 
 ### Listar produtos em falta
 GET {{baseUrl}}/produtos/falta 
+
+### Listar produtos similares a um texto
+POST {{baseUrl}}/cart
+Content-Type: application/json
+
+{
+    "input": "Feijão preto com temperos e carnes"
+}
