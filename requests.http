@@ -1,0 +1,29 @@
+@baseUrl = http://localhost:3000
+
+### Gerar produtos baseado em uma descrição
+POST {{baseUrl}}/generate
+Content-Type: application/json
+
+{
+    "input": "Preciso de ingredientes para fazer uma feijoada"
+}
+
+### Gerar embeddings para todos os produtos
+POST {{baseUrl}}/embeddings
+
+### Gerar embedding para um texto específico
+POST {{baseUrl}}/embedding
+Content-Type: application/json
+
+{
+    "input": "Feijão preto com temperos e carnes"
+}
+
+### Listar todos os produtos
+GET {{baseUrl}}/produtos
+
+### Listar produtos em estoque
+GET {{baseUrl}}/produtos/estoque
+
+### Listar produtos em falta
+GET {{baseUrl}}/produtos/falta 
