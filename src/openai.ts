@@ -1,8 +1,9 @@
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { zodResponseFormat, zodTextFormat } from 'openai/helpers/zod';
 import { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources";
 import { z } from 'zod';
 import { produtosEmEstoque, produtosEmFalta, setarEmbedding, todosProdutos } from "./database";
 import OpenAI from 'openai';
+import { ResponseCreateParamsNonStreaming } from 'openai/resources/responses/responses';
 
 // Schema que define a estrutura da resposta esperada do modelo
 // Usado com zodResponseFormat para garantir que o modelo retorne dados no formato correto
@@ -151,3 +152,24 @@ export const embedProducts = async () => {
     setarEmbedding(index, embedding);
   }));
 };
+
+const generateResponse = async (params: ResponseCreateParamsNonStreaming) => {
+    const response = await client.responses.parse(params);
+  
+    if (response.output_parsed) return response.output_parsed;
+  
+    if (response.output_text) return response.output_text;
+  
+    return null;
+  }
+  
+  export const generateCart = async (input: string, products: string[]) => {
+    return generateResponse({
+      model: 'gpt-4o-mini',
+      instructions: `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário. Os produtos disponíveis são os seguintes: ${JSON.stringify(products)}`,
+      input,
+      text: {
+        format: zodTextFormat(schema, 'carrinho'),
+      }
+    })
+  }

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import { embedProducts, generateEmbedding, generateProducts } from "./openai";
+import { embedProducts, generateCart, generateEmbedding, generateProducts } from "./openai";
 import { produtosEmEstoque, produtosEmFalta, todosProdutos, produtosSimilares } from "./database";
 
 const app = express();
@@ -45,6 +45,14 @@ app.post("/cart", async (req, res) => {
     const produtos = produtosSimilares(embedding);
     res.json(produtos.map(p => ({ nome: p.nome, similaridade: p.similaridade })));
   });
+
+  app.post('/response', async (req, res) => {
+    const { input } = req.body;
+  
+    const cart = await generateCart(input, ['feijão', 'detergente']);
+  
+    res.json(cart);
+  })
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

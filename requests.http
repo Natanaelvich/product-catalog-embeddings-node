@@ -35,3 +35,11 @@ Content-Type: application/json
 {
     "input": "Feijão preto com temperos e carnes"
 }
+
+### Gerar resposta para um texto específico
+POST {{baseUrl}}/response
+Content-Type: application/json
+
+{
+    "input": "Preciso de ingredientes para fazer uma feijoada"
+}
