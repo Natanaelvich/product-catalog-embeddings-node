@@ -43,3 +43,17 @@ Content-Type: application/json
 {
     "input": "Preciso de ingredientes para fazer uma feijoada"
 }
+
+### Upload de arquivo
+POST {{baseUrl}}/upload
+
+### Criar vector store
+POST {{baseUrl}}/vector-store
+
+### Gerar resposta para um texto específico com vector store
+POST {{baseUrl}}/response
+Content-Type: application/json
+
+{
+    "input": "Preciso de ingredientes para fazer uma moqueca de peixe"
+}

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { produtosEmEstoque, produtosEmFalta, setarEmbedding, todosProdutos } from "./database";
 import OpenAI from 'openai';
 import { ResponseCreateParamsNonStreaming } from 'openai/resources/responses/responses';
+import { ReadStream } from 'fs';
 
 // Schema que define a estrutura da resposta esperada do modelo
 // Usado com zodResponseFormat para garantir que o modelo retorne dados no formato correto
@@ -168,8 +169,30 @@ const generateResponse = async (params: ResponseCreateParamsNonStreaming) => {
       model: 'gpt-4o-mini',
       instructions: `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário. Os produtos disponíveis são os seguintes: ${JSON.stringify(products)}`,
       input,
+      tools: [{
+        type: 'file_search',
+        vector_store_ids: ['vs_68263fadfd3c8191833554f9a09dc346']
+      }],
       text: {
         format: zodTextFormat(schema, 'carrinho'),
       }
     })
+  }
+
+  export const uploadFile = async (file: ReadStream) => {
+    const uploaded = await client.files.create({
+      file,
+      purpose: 'assistants',
+    });
+  
+    console.dir(uploaded, { depth: null });
+  }
+  
+  export const createVector = async () => {
+    const vectorStore = await client.vectorStores.create({
+      name: 'node_ia_file_search_class',
+      file_ids: ['file-1dfG23PHQFKsh8PXHhj5sK']
+    })
+  
+    console.dir(vectorStore, { depth: null });
   }

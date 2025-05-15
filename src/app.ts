@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
-import { embedProducts, generateCart, generateEmbedding, generateProducts } from "./openai";
+import { createVector, embedProducts, generateCart, generateEmbedding, generateProducts, uploadFile } from "./openai";
 import { produtosEmEstoque, produtosEmFalta, todosProdutos, produtosSimilares } from "./database";
+import { createReadStream } from 'fs';
+import path from 'path';
 
 const app = express();
 app.use(express.json());
@@ -52,6 +54,17 @@ app.post("/cart", async (req, res) => {
     const cart = await generateCart(input, ['feijão', 'detergente']);
   
     res.json(cart);
+  })
+
+  app.post('/upload', async (req, res) => {
+    const file = createReadStream(path.join(__dirname, '..', 'static', 'recipes.md'));
+    uploadFile(file)
+    res.status(201).end();
+  })
+  
+  app.post('/vector-store', async (req, res) => {
+    await createVector();
+    res.status(201).end();
   })
 
 const PORT = process.env.PORT || 3000;
