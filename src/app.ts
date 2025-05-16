@@ -8,12 +8,7 @@ import {
   generateProducts,
   uploadFile,
 } from './openai';
-import {
-  produtosEmEstoque,
-  produtosEmFalta,
-  todosProdutos,
-  produtosSimilares,
-} from './database';
+import { produtosEmEstoque, produtosEmFalta, todosProdutos } from './database';
 import { createReadStream } from 'fs';
 import path from 'path';
 
@@ -51,21 +46,22 @@ app.get('/produtos/falta', (req, res) => {
 
 app.post('/cart', async (req, res) => {
   const { input } = req.body;
-  const embedding = await generateEmbedding(input);
-  if (!embedding) {
-    res.status(500).json({ error: 'Embedding não gerada' });
-    return;
-  }
-  const produtos = produtosSimilares(embedding);
-  res.json(
-    produtos.map((p) => ({ nome: p.nome, similaridade: p.similaridade }))
+
+  const cart = await generateCart(
+    input,
+    todosProdutos().map((p) => p.nome)
   );
+
+  res.json(cart);
 });
 
 app.post('/response', async (req, res) => {
   const { input } = req.body;
 
-  const cart = await generateCart(input, ['feijão', 'detergente']);
+  const cart = await generateCart(
+    input,
+    todosProdutos().map((p) => p.nome)
+  );
 
   res.json(cart);
 });
