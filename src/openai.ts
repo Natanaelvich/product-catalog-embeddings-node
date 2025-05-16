@@ -1,7 +1,15 @@
 import { zodResponseFormat, zodTextFormat } from 'openai/helpers/zod';
-import { ChatCompletionMessageParam, ChatCompletionTool } from "openai/resources";
+import {
+  ChatCompletionMessageParam,
+  ChatCompletionTool,
+} from 'openai/resources';
 import { z } from 'zod';
-import { produtosEmEstoque, produtosEmFalta, setarEmbedding, todosProdutos } from "./database";
+import {
+  produtosEmEstoque,
+  produtosEmFalta,
+  setarEmbedding,
+  todosProdutos,
+} from './database';
 import OpenAI from 'openai';
 import { ResponseCreateParamsNonStreaming } from 'openai/resources/responses/responses';
 import { ReadStream } from 'fs';
@@ -9,7 +17,9 @@ import { ReadStream } from 'fs';
 // Schema que define a estrutura da resposta esperada do modelo
 // Usado com zodResponseFormat para garantir que o modelo retorne dados no formato correto
 const schema = z.object({
-  produtos: z.array(z.string()).describe('Lista de produtos relevantes para a descrição fornecida'),
+  produtos: z
+    .array(z.string())
+    .describe('Lista de produtos relevantes para a descrição fornecida'),
 });
 
 type ProdutosResponse = z.infer<typeof schema>;
@@ -57,7 +67,10 @@ const tools: ChatCompletionTool[] = [
  * @param format - Formato de resposta esperado (usando zodResponseFormat)
  * @returns A resposta final do modelo após todas as chamadas de ferramentas
  */
-const generateCompletion = async (messages: ChatCompletionMessageParam[], format: any): Promise<any> => {
+const generateCompletion = async (
+  messages: ChatCompletionMessageParam[],
+  format: any
+): Promise<any> => {
   // Faz a chamada à API da OpenAI com as ferramentas disponíveis
   const completion = await client.beta.chat.completions.parse({
     model: 'gpt-4-turbo-preview',
@@ -87,7 +100,7 @@ const generateCompletion = async (messages: ChatCompletionMessageParam[], format
     }
     // Executa a função da ferramenta com os argumentos fornecidos pelo modelo
     const result = functionToCall(tool_call.function.parsed_arguments);
-    
+
     // Adiciona a mensagem do modelo e o resultado da ferramenta ao histórico da conversa
     // Isso permite que o modelo use o resultado em sua próxima resposta
     messages.push(completion.choices[0].message);
@@ -96,10 +109,13 @@ const generateCompletion = async (messages: ChatCompletionMessageParam[], format
       tool_call_id: tool_call.id,
       content: result.toString(),
     });
-    
+
     // Faz uma nova chamada ao modelo com o histórico atualizado
     // Isso permite que o modelo use as informações obtidas da ferramenta
-    const completionWithToolResult = await generateCompletion(messages, zodResponseFormat(schema, 'produtos_schema'));
+    const completionWithToolResult = await generateCompletion(
+      messages,
+      zodResponseFormat(schema, 'produtos_schema')
+    );
     return completionWithToolResult;
   }
 
@@ -111,12 +127,15 @@ const generateCompletion = async (messages: ChatCompletionMessageParam[], format
  * @param message - Descrição ou necessidade do usuário
  * @returns Lista de produtos recomendados
  */
-export const generateProducts = async (message: string): Promise<ProdutosResponse> => {
+export const generateProducts = async (
+  message: string
+): Promise<ProdutosResponse> => {
   // Inicializa a conversa com uma mensagem do sistema e a mensagem do usuário
   const messages: ChatCompletionMessageParam[] = [
     {
       role: 'system',
-      content: 'Liste no máximo três produtos que atendam a necessidade do usuário. Considere apenas os produtos em estoque.',
+      content:
+        'Liste no máximo três produtos que atendam a necessidade do usuário. Considere apenas os produtos em estoque.',
     },
     {
       role: 'user',
@@ -126,7 +145,10 @@ export const generateProducts = async (message: string): Promise<ProdutosRespons
 
   // Usa zodResponseFormat para garantir que a resposta siga o schema definido
   // O segundo parâmetro ('produtos_schema') é um identificador para o schema
-  const completion = await generateCompletion(messages, zodResponseFormat(schema, 'produtos_schema'));
+  const completion = await generateCompletion(
+    messages,
+    zodResponseFormat(schema, 'produtos_schema')
+  );
   return (completion.choices[0].message as any).parsed as ProdutosResponse;
 };
 
@@ -147,52 +169,56 @@ export const generateEmbedding = async (input: string) => {
 export const embedProducts = async () => {
   const produtos = todosProdutos();
 
-  await Promise.allSettled(produtos.map(async (p, index) => {
-    const embedding = await generateEmbedding(`${p.nome}: ${p.descricao}`);
-    if (!embedding) return;
-    setarEmbedding(index, embedding);
-  }));
+  await Promise.allSettled(
+    produtos.map(async (p, index) => {
+      const embedding = await generateEmbedding(`${p.nome}: ${p.descricao}`);
+      if (!embedding) return;
+      setarEmbedding(index, embedding);
+    })
+  );
 };
 
 const generateResponse = async (params: ResponseCreateParamsNonStreaming) => {
-    const response = await client.responses.parse(params);
-  
-    if (response.output_parsed) return response.output_parsed;
-  
-    if (response.output_text) return response.output_text;
-  
-    return null;
-  }
-  
-  export const generateCart = async (input: string, products: string[]) => {
-    return generateResponse({
-      model: 'gpt-4o-mini',
-      instructions: `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário. Os produtos disponíveis são os seguintes: ${JSON.stringify(products)}`,
-      input,
-      tools: [{
-        type: 'file_search',
-        vector_store_ids: ['vs_68263fadfd3c8191833554f9a09dc346']
-      }],
-      text: {
-        format: zodTextFormat(schema, 'carrinho'),
-      }
-    })
-  }
+  const response = await client.responses.parse(params);
 
-  export const uploadFile = async (file: ReadStream) => {
-    const uploaded = await client.files.create({
-      file,
-      purpose: 'assistants',
-    });
-  
-    console.dir(uploaded, { depth: null });
-  }
-  
-  export const createVector = async () => {
-    const vectorStore = await client.vectorStores.create({
-      name: 'node_ia_file_search_class',
-      file_ids: ['file-1dfG23PHQFKsh8PXHhj5sK']
-    })
-  
-    console.dir(vectorStore, { depth: null });
-  }
+  if (response.output_parsed) return response.output_parsed;
+
+  if (response.output_text) return response.output_text;
+
+  return null;
+};
+
+export const generateCart = async (input: string, products: string[]) => {
+  return generateResponse({
+    model: 'gpt-4o-mini',
+    instructions: `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário. Os produtos disponíveis são os seguintes: ${JSON.stringify(products)}`,
+    input,
+    tools: [
+      {
+        type: 'file_search',
+        vector_store_ids: ['vs_68263fadfd3c8191833554f9a09dc346'],
+      },
+    ],
+    text: {
+      format: zodTextFormat(schema, 'carrinho'),
+    },
+  });
+};
+
+export const uploadFile = async (file: ReadStream) => {
+  const uploaded = await client.files.create({
+    file,
+    purpose: 'assistants',
+  });
+
+  console.dir(uploaded, { depth: null });
+};
+
+export const createVector = async () => {
+  const vectorStore = await client.vectorStores.create({
+    name: 'node_ia_file_search_class',
+    file_ids: ['file-1dfG23PHQFKsh8PXHhj5sK'],
+  });
+
+  console.dir(vectorStore, { depth: null });
+};
