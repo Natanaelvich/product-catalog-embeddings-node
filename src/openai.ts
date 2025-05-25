@@ -188,14 +188,36 @@ const generateResponse = async <T = null>(
 };
 
 const createCartPromptChunks = (input: string, products: string[]) => {
-  const chunkSize = 10;
+  const chunkSize = 100;
   const chunks: string[] = [];
 
   for (let i = 0; i < chunkSize; i += chunkSize) {
     chunks.push(
-      `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário. Os produtos disponíveis são os seguintes: ${JSON.stringify(
-        products.slice(i, i + chunkSize)
-      )}`
+      `Retorne uma lista de até 5 produtos que satisfação a necessidade do usuário.
+  
+        1. Divida o prato em components principais.
+        2. Para cada componente, forneça uma lista de produtos que podem ser usados para prepará-lo.
+        3. Liste todos os produtos necessários para todos os componentes.
+  
+        -------------------
+        Exemplo:
+        - Produtos disponíveis: Farinha de trigo, Açúcar, Manteiga, Sal, Limão, Ovos, Creme de leite, Morango, Chocolate, Leite condensado, Biscoito, Gelatina
+        - Necessidade do usuário: Torta de Limão
+  
+        1. Divida o prato em components principais.
+          - Massa, recheio, Cobertura
+        2. Para cada componente, forneça uma lista de produtos que podem ser usados para prepará-lo.
+          - Massa: farinha de trigo, açúcar, manteiga, Sal
+          - Recheio: limão, açúcar, ovos
+          - Cobertura: creme de leite, açúcar
+        3. Liste todos os produtos necessários para todos os componentes.
+          - Farinha de trigo, açúcar, manteiga, sal, limão, ovos, creme de leite
+        -------------------
+  
+  
+        Os produtos disponíveis são os seguintes: ${JSON.stringify(
+          products.slice(i, i + chunkSize)
+        )}`
     );
   }
 
