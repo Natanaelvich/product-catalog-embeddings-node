@@ -2,6 +2,7 @@ import { zodResponseFormat, zodTextFormat } from 'openai/helpers/zod';
 import {
   ChatCompletionMessageParam,
   ChatCompletionTool,
+  ChatCompletionMessage,
 } from 'openai/resources';
 import { z } from 'zod';
 import {
@@ -61,6 +62,14 @@ const tools: ChatCompletionTool[] = [
   },
 ];
 
+type CompletionResponse = {
+  choices: Array<{
+    message: ChatCompletionMessage & {
+      parsed?: ProdutosResponse;
+    };
+  }>;
+};
+
 /**
  * Função recursiva que gerencia a conversa com o modelo, incluindo chamadas de ferramentas
  * @param messages - Array de mensagens da conversa (system, user, assistant, tool)
@@ -69,8 +78,8 @@ const tools: ChatCompletionTool[] = [
  */
 const generateCompletion = async (
   messages: ChatCompletionMessageParam[],
-  format: any
-): Promise<any> => {
+  format: ReturnType<typeof zodResponseFormat>
+): Promise<CompletionResponse> => {
   // Faz a chamada à API da OpenAI com as ferramentas disponíveis
   const completion = await client.beta.chat.completions.parse({
     model: 'gpt-4-turbo-preview',
@@ -90,7 +99,7 @@ const generateCompletion = async (
   if (tool_calls) {
     const [tool_call] = tool_calls;
     // Mapeia os nomes das ferramentas para suas funções correspondentes
-    const toolsMap: Record<string, Function> = {
+    const toolsMap: Record<string, () => string[]> = {
       produtos_em_estoque: produtosEmEstoque,
       produtos_em_falta: produtosEmFalta,
     };
@@ -99,7 +108,7 @@ const generateCompletion = async (
       throw new Error('Function not found');
     }
     // Executa a função da ferramenta com os argumentos fornecidos pelo modelo
-    const result = functionToCall(tool_call.function.parsed_arguments);
+    const result = functionToCall();
 
     // Adiciona a mensagem do modelo e o resultado da ferramenta ao histórico da conversa
     // Isso permite que o modelo use o resultado em sua próxima resposta
@@ -149,7 +158,7 @@ export const generateProducts = async (
     messages,
     zodResponseFormat(schema, 'produtos_schema')
   );
-  return (completion.choices[0].message as any).parsed as ProdutosResponse;
+  return completion.choices[0].message.parsed as ProdutosResponse;
 };
 
 export const generateEmbedding = async (input: string) => {
@@ -161,7 +170,7 @@ export const generateEmbedding = async (input: string) => {
     });
 
     return response.data[0].embedding ?? null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -178,9 +187,9 @@ export const embedProducts = async () => {
   );
 };
 
-const generateResponse = async <T = null>(
+const generateResponse = async <T>(
   params: ResponseCreateParamsNonStreaming
-) => {
+): Promise<T | null> => {
   const response = await client.responses.parse(params);
   if (response.output_parsed) return response.output_parsed as T;
 
